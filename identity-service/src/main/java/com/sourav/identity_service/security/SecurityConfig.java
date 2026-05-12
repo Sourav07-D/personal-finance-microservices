@@ -9,6 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableMethodSecurity
@@ -24,15 +25,35 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users").permitAll()
+
+                        // ✅ PUBLIC APIs
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/users/register"
+                        ).permitAll()
+
+                        // ✅ EVERYTHING ELSE PROTECTED
                         .anyRequest().authenticated()
                 )
+
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(authEntryPoint) // 🔥 401
-                        .accessDeniedHandler(accessDeniedHandler) // 🔥 403
+                        .authenticationEntryPoint(authEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
         return http.build();
     }
 
